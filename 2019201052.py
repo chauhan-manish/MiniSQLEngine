@@ -53,24 +53,32 @@ def getTable(par_table_name):
 	
 	return final_table
 
-def modTable(table, par_table_name, cond_token):
+def modTable(table, par_table_name, cond_token, condition):
 	final_table = []
 	row = len(table)
 	col = len(table[0])
 
+	col_index = findColIndex(par_table_name, cond_token)
+	print(col_index)
+
 	for i in range(row):
-		col_index = findColIndex(par_table_name, cond_token)
-		#print(col_index)
-		flag = False
+		res = []
 		for j in range(int(len(cond_token)/3)):
 			if cond_token[3 * j + 2] == col_index[3 * j + 2]:
-				s = str(table[i][3 * j + 0]) + col_index[3 * j + 1] + str(col_index[3 * j + 2])
-				if eval(s):
-					flag = True
+				s = str(table[i][col_index[3 * j + 0]]) + col_index[3 * j + 1] + str(col_index[3 * j + 2])
+				res.append(eval(s))
 			else:
-				s = str(table[i][3 * j + 0]) + col_index[3 * j + 1] + str(table[i][3 * j + 2])
-				if eval(s):
-					flag = True
+				s = str(table[i][col_index[3 * j + 0]]) + col_index[3 * j + 1] + str(table[i][col_index[3 * j + 2]])
+				res.append(eval(s))
+				
+		#print(res)
+		if condition == "AND":
+			flag = res[0] and res[1]
+		elif condition == "OR":
+			flag = res[0] or res[1]
+		else:
+			flag = res[0]
+		
 		if flag:
 			final_table.append(table[i])
 			 
@@ -184,16 +192,19 @@ def processQuery(tokens, par_table_name, par_column_name):
 		cond_token = tokens[4][5:len(tokens[4])]
 		cond_token = cond_token.strip()
 		#print(cond_token)
+		condition = "NONE"
 		if re.search('and', cond_token, re.IGNORECASE):
 			cond_token = cond_token.split()
 			cond_token.remove('AND')
+			condition = "AND"
 		elif re.search('or', cond_token, re.IGNORECASE):
 			cond_token = cond_token.split()
 			cond_token.remove('OR')
+			condition = "OR"
 		else:
 			cond_token = cond_token.split()
 
-		table = modTable(table, par_table_name, cond_token)
+		table = modTable(table, par_table_name, cond_token, condition)
 
 	row = len(table)
 	col = len(table[0])
