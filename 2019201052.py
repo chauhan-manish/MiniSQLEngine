@@ -1,6 +1,7 @@
 import sys
 import csv
 import re
+import os
 import sqlparse
 
 metadata = {}
@@ -34,22 +35,33 @@ def getCrossProduct(A, B):
 	#print(C)
 	return C
 
+def condition_check( cond):
+	condition_list = [">", "<", "=", "<>", ">=", "<="]
+	for i in condition_list:
+		if i == cond:
+			return True
+	return False
+
 def getTable(par_table_name):
 	final_table = []
 	tmp_table = []
 	for table in par_table_name:
 		filename = 'files/' + table + '.csv'
-		with open(filename, 'r') as file:
-			reader = csv.reader(file)
-			for row in reader:
-				tmp_table.append(row)
-		
-		if len(final_table) == 0:
-			final_table = tmp_table
+		if os.path.exists(filename):
+			with open(filename, 'r') as file:
+				reader = csv.reader(file)
+				for row in reader:
+					tmp_table.append(row)
+			
+			if len(final_table) == 0:
+				final_table = tmp_table
+			else:
+				final_table = getCrossProduct(final_table, tmp_table)
+			
+			tmp_table = []
 		else:
-			final_table = getCrossProduct(final_table, tmp_table)
-		
-		tmp_table = []
+			print(table + " doesn't exist")
+			exit()
 	
 	return final_table
 
@@ -59,8 +71,20 @@ def modTable(table, par_table_name, cond_token, condition):
 	col = len(table[0])
 
 	col_index = findColIndex(par_table_name, cond_token)
-	print(col_index)
+	#print(col_index)
 
+	for i in range(int(len(cond_token)/3)):
+		if (str(col_index[3 * i + 0])).isdigit() == False:
+			print("Invalid column name: " + col_index[3 * i + 0])
+			exit()
+
+		if condition_check(str(col_index[3 * i + 1])) == False:
+			print("Invalid Operator: " + col_index[3 * i + 1])
+			exit()
+
+		if (str(col_index[3 * i + 2])).isdigit() == False:
+			print("Invalid column name: " + col_index[3 * i + 2])
+			exit()
 	for i in range(row):
 		res = []
 		for j in range(int(len(cond_token)/3)):
@@ -89,7 +113,7 @@ def findColIndex(par_table_name, par_column_name):
 	col_index = []
 	for k in range(len(par_column_name)):
 		s = 0
-		if par_column_name[k].find('.') != -1:
+		if par_column_name[k] != "." and par_column_name[k].find('.') != -1:
 			temp = par_column_name[k].split('.')
 			for j in range(len(metadata[temp[0]])):
 				if metadata[temp[0]][j] == temp[1]:
@@ -191,7 +215,7 @@ def processQuery(tokens, par_table_name, par_column_name):
 	if len(tokens) > 4:
 		cond_token = tokens[4][5:len(tokens[4])]
 		cond_token = cond_token.strip()
-		#print(cond_token)
+		
 		condition = "NONE"
 		if re.search('and', cond_token, re.IGNORECASE):
 			cond_token = cond_token.split()
@@ -204,10 +228,11 @@ def processQuery(tokens, par_table_name, par_column_name):
 		else:
 			cond_token = cond_token.split()
 
+		#print(cond_token)
 		table = modTable(table, par_table_name, cond_token, condition)
 
 	row = len(table)
-	col = len(table[0])
+	#col = len(table[0])
 	dist, agg_fun = findAggregateAndDistinct(par_column_name)
 	
 	if(tokens[1] == '*'):
@@ -216,7 +241,7 @@ def processQuery(tokens, par_table_name, par_column_name):
 				print(j, end="\t")
 		print()
 		for i in range(row):
-			for j in range(col):
+			for j in range(len(table[i])):
 				print(table[i][j], end="\t")
 			print()
 	elif len(dist) == 1:
@@ -241,10 +266,15 @@ def processQuery(tokens, par_table_name, par_column_name):
 				print(findSum(table, col_index[i]), end="\t")
 			elif agg_fun[i] == "avg":
 				print(findAverage(table, col_index[i]), end="\t")
-		print()
+		print("1 row affected")
 	else:
 		col_index = findColIndex(par_table_name, par_column_name)
 		print(col_index)
+		for i in range(len(col_index)):
+			if par_column_name[i] == col_index[i]:
+				print("Invalid column name: " + par_column_name[i])
+				exit()
+
 		for i in par_column_name:
 			print(i, end="\t")
 		print()
