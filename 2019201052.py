@@ -74,7 +74,7 @@ def modTable(table, par_table_name, cond_token, condition):
 	#print(col_index)
 
 	for i in range(int(len(cond_token)/3)):
-		if (str(col_index[3 * i + 0])).isdigit() == False:
+		if re.search('(\d+(?:\.\d+)?)', str(col_index[3 * i + 0])) == False:
 			print("Invalid column name: " + col_index[3 * i + 0])
 			exit()
 
@@ -82,9 +82,13 @@ def modTable(table, par_table_name, cond_token, condition):
 			print("Invalid Operator: " + col_index[3 * i + 1])
 			exit()
 
-		if (str(col_index[3 * i + 2])).isdigit() == False:
+		if str(col_index[3 * i + 1]) == "=":
+			col_index[3 * i + 1] = "=="
+
+		if re.search('(\d+(?:\.\d+)?)', str(col_index[3 * i + 2])) == False:
 			print("Invalid column name: " + col_index[3 * i + 2])
 			exit()
+
 	for i in range(row):
 		res = []
 		for j in range(int(len(cond_token)/3)):
@@ -113,7 +117,9 @@ def findColIndex(par_table_name, par_column_name):
 	col_index = []
 	for k in range(len(par_column_name)):
 		s = 0
-		if par_column_name[k] != "." and par_column_name[k].find('.') != -1:
+		if re.search('(\d+(?:\.\d+)?)', par_column_name[k]):
+			col_index.append(par_column_name[k])
+		elif par_column_name[k] != "." and par_column_name[k].find('.') != -1:
 			temp = par_column_name[k].split('.')
 			for j in range(len(metadata[temp[0]])):
 				if metadata[temp[0]][j] == temp[1]:
@@ -219,11 +225,11 @@ def processQuery(tokens, par_table_name, par_column_name):
 		condition = "NONE"
 		if re.search('and', cond_token, re.IGNORECASE):
 			cond_token = cond_token.split()
-			cond_token.remove('AND')
+			del cond_token[3]
 			condition = "AND"
 		elif re.search('or', cond_token, re.IGNORECASE):
 			cond_token = cond_token.split()
-			cond_token.remove('OR')
+			del cond_token[3]
 			condition = "OR"
 		else:
 			cond_token = cond_token.split()
@@ -244,6 +250,7 @@ def processQuery(tokens, par_table_name, par_column_name):
 			for j in range(len(table[i])):
 				print(table[i][j], end="\t")
 			print()
+		print(str(row) + " row affected.")
 	elif len(dist) == 1:
 		print(par_column_name[0])
 		par_column_name[0] = par_column_name[0][9:-1]
@@ -269,7 +276,7 @@ def processQuery(tokens, par_table_name, par_column_name):
 		print("1 row affected")
 	else:
 		col_index = findColIndex(par_table_name, par_column_name)
-		print(col_index)
+		#print(col_index)
 		for i in range(len(col_index)):
 			if par_column_name[i] == col_index[i]:
 				print("Invalid column name: " + par_column_name[i])
@@ -286,10 +293,13 @@ def processQuery(tokens, par_table_name, par_column_name):
 
 
 def main():
-	readMetadata()
-	query = sys.argv[1]
-	#print(query)
-	parseQuery(query)
+	try:
+		readMetadata()
+		query = sys.argv[1]
+		#print(query)
+		parseQuery(query)
+	except:
+		print("Syntax Error")
 
 if __name__ == "__main__":
 	main()
