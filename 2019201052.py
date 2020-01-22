@@ -74,7 +74,7 @@ def modTable(table, par_table_name, cond_token, condition):
 	#print(col_index)
 
 	for i in range(int(len(cond_token)/3)):
-		if re.search('(\d+(?:\.\d+)?)', str(col_index[3 * i + 0])) == False:
+		if (str(col_index[3 * i + 0])).isdigit() == False:
 			print("Invalid column name: " + col_index[3 * i + 0])
 			exit()
 
@@ -87,25 +87,19 @@ def modTable(table, par_table_name, cond_token, condition):
 		if str(col_index[3 * i + 1]) == "<>":
 			col_index[3 * i + 1] = "!="
 
-		if re.search('(\d+(?:\.\d+)?)', str(col_index[3 * i + 2])) == False:
+		if (str(col_index[3 * i + 2])).isdigit() == False:
 			print("Invalid column name: " + col_index[3 * i + 2])
 			exit()
-
+		
 	for i in range(row):
 		res = []
 		for j in range(int(len(cond_token)/3)):
-			s = ""
-			if cond_token[3 * j + 0] == col_index[3 * j + 0]:
-				s = s + str(col_index[3 * j + 0]) + col_index[3 * j + 1]
-			else:
-				s = s + str(table[i][col_index[3 * j + 0]]) + col_index[3 * j + 1]
-
 			if cond_token[3 * j + 2] == col_index[3 * j + 2]:
-				s = s + str(col_index[3 * j + 2])
+				s = str(table[i][col_index[3 * j + 0]]) + str(col_index[3 * j + 1]) + str(col_index[3 * j + 2])
+				res.append(eval(s))
 			else:
-				s = s + str(table[i][col_index[3 * j + 2]])
-				
-			res.append(eval(s))	
+				s = str(table[i][col_index[3 * j + 0]]) + str(col_index[3 * j + 1]) + str(table[i][col_index[3 * j + 2]])
+				res.append(eval(s))	
 		#print(res)
 		if condition == "AND":
 			flag = res[0] and res[1]
@@ -124,9 +118,7 @@ def findColIndex(par_table_name, par_column_name):
 	col_index = []
 	for k in range(len(par_column_name)):
 		s = 0
-		if re.search('(\d+(?:\.\d+)?)', par_column_name[k]):
-			col_index.append(par_column_name[k])
-		elif par_column_name[k] != "." and par_column_name[k].find('.') != -1:
+		if par_column_name[k] != "." and par_column_name[k].find('.') != -1:
 			temp = par_column_name[k].split('.')
 			for j in range(len(metadata[temp[0]])):
 				if metadata[temp[0]][j] == temp[1]:
@@ -270,6 +262,7 @@ def processQuery(tokens, par_table_name, par_column_name):
 		distinct = findDistinct(table, col_index[0])
 		for i in distinct:
 			print(i)
+		print(str(len(distinct)) + " row affected")
 	elif len(agg_fun) != 0:
 		for i in range(len(par_column_name)):
 			print(par_column_name[i], end="\t")
