@@ -36,7 +36,7 @@ def getCrossProduct(A, B):
 	return C
 
 def condition_check( cond):
-	condition_list = [">", "<", "=", "<>", ">=", "<="]
+	condition_list = [">", "<", "=", "<>", ">=", "<=", "!="]
 	for i in condition_list:
 		if i == cond:
 			return True
@@ -84,6 +84,8 @@ def modTable(table, par_table_name, cond_token, condition):
 
 		if str(col_index[3 * i + 1]) == "=":
 			col_index[3 * i + 1] = "=="
+		if str(col_index[3 * i + 1]) == "<>":
+			col_index[3 * i + 1] = "!="
 
 		if re.search('(\d+(?:\.\d+)?)', str(col_index[3 * i + 2])) == False:
 			print("Invalid column name: " + col_index[3 * i + 2])
@@ -92,13 +94,18 @@ def modTable(table, par_table_name, cond_token, condition):
 	for i in range(row):
 		res = []
 		for j in range(int(len(cond_token)/3)):
-			if cond_token[3 * j + 2] == col_index[3 * j + 2]:
-				s = str(table[i][col_index[3 * j + 0]]) + col_index[3 * j + 1] + str(col_index[3 * j + 2])
-				res.append(eval(s))
+			s = ""
+			if cond_token[3 * j + 0] == col_index[3 * j + 0]:
+				s = s + str(col_index[3 * j + 0]) + col_index[3 * j + 1]
 			else:
-				s = str(table[i][col_index[3 * j + 0]]) + col_index[3 * j + 1] + str(table[i][col_index[3 * j + 2]])
-				res.append(eval(s))
+				s = s + str(table[i][col_index[3 * j + 0]]) + col_index[3 * j + 1]
+
+			if cond_token[3 * j + 2] == col_index[3 * j + 2]:
+				s = s + str(col_index[3 * j + 2])
+			else:
+				s = s + str(table[i][col_index[3 * j + 2]])
 				
+			res.append(eval(s))	
 		#print(res)
 		if condition == "AND":
 			flag = res[0] and res[1]
@@ -159,22 +166,23 @@ def findAggregateAndDistinct(par_column_name):
 			agg_fun.append("avg")
 		elif re.search('distinct', i, re.IGNORECASE):
 			dist.append('distinct')
+	
 	return dist, agg_fun
 
 
 def findMinimum(table, index):
 	row = len(table)
-	minimum = 999999999
+	temp = []
 	for i in range(row):
-		minimum = min(minimum, int(table[i][index]))
-	return minimum
+		temp.append(int(table[i][index]))
+	return min(temp)
 
 def findMaximum(table, index):
 	row = len(table)
-	maximum = -1
+	temp = []
 	for i in range(row):
-		maximum = max(maximum, int(table[i][index]))
-	return maximum
+		temp.append(int(table[i][index]))
+	return max(temp)
 
 def findSum(table, index):
 	row = len(table)
@@ -188,13 +196,18 @@ def findAverage(table, index):
 	suum = 0
 	for i in range(row):
 		suum = suum + int(table[i][index])
-	return suum/row
+	return float(suum/row)
 
 def findDistinct(table, index):
+	distinct = []
 	freq = {}
 	row = len(table)
 	for i in range(row):
-		freq[table[i][index]] = freq[table[i][index]] + 1
+		if i in freq:
+			freq[table[i][index]] = freq[table[i][index]] + 1
+		else:
+			freq[table[i][index]] = 1;
+	#print(freq)
 	for i in freq:
 		distinct.append(i)
 	return distinct
@@ -240,7 +253,6 @@ def processQuery(tokens, par_table_name, par_column_name):
 	row = len(table)
 	#col = len(table[0])
 	dist, agg_fun = findAggregateAndDistinct(par_column_name)
-	
 	if(tokens[1] == '*'):
 		for i in par_table_name:
 			for j in metadata[i]:
@@ -273,7 +285,7 @@ def processQuery(tokens, par_table_name, par_column_name):
 				print(findSum(table, col_index[i]), end="\t")
 			elif agg_fun[i] == "avg":
 				print(findAverage(table, col_index[i]), end="\t")
-		print("1 row affected")
+		print("\n1 row affected")
 	else:
 		col_index = findColIndex(par_table_name, par_column_name)
 		#print(col_index)
